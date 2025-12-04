@@ -1,0 +1,117 @@
+pipeline {
+    agent any
+
+    environment {
+        JAVA_HOME = "C:\\Program Files\\Java\\jdk-11.0.15.1"
+        PATH = "${JAVA_HOME}\\bin;${PATH}"
+        TOMCAT_HOME = 'C:\\Server\\apache-tomcat-9.0.109-windows-x64\\apache-tomcat-9.0.109'
+        TOMCAT_WEBAPPS_PATH = "${TOMCAT_HOME}\\webapps"
+        TOMCAT_SERVICE_NAME = 'Tomcat9'
+        MAVEN_HOME = "C:\\ProgramData\\Jenkins\\.jenkins\\tools\\hudson.tasks.Maven_MavenInstallation\\Maven"
+    }
+
+    stages {
+
+        stage('Cleanup Workspace') {
+            steps {
+                deleteDir()
+            }
+        }
+
+        stage('Clone Repository') {
+            steps {
+                git credentialsId: 'github-credentials',
+                    url: 'https://github.com/ChaitanyaBhatt147/Project04_Clone.git',
+                    branch: 'main'
+            }
+        }
+
+        stage('Build WAR File') {
+            steps {
+                bat "\"%MAVEN_HOME%\\bin\\mvn\" clean package -DskipTests -Dmaven.repo.local=.m2/repository -f ORSProject-04/pom.xml"
+            }
+        }
+
+        stage('Copy WAR to Tomcat') {
+            steps {
+                script {
+                    def warFile = "ORSProject-04\\target\\ORSProject-04.war"
+                    def destination = "${TOMCAT_WEBAPPS_PATH}\\ORSProject-04.war"
+
+                    // Clean old deployment
+                    bat "rmdir /S /Q \"${TOMCAT_WEBAPPS_PATH}\\ORSProject-04\" || exit 0"
+                    bat "del /Q \"${destination}\" || exit 0"
+
+                    // Copy new WAR
+                    bat "copy /Y \"${warFile}\" \"${destination}\""
+                }
+            }
+        }
+
+        stage('Ensure Tomcat Service Exists') {
+            steps {
+                script {
+                    def serviceExists = bat(script: "sc query ${TOMCAT_SERVICE_NAME}", returnStatus: true) == 0
+                    if (!serviceExists) {
+                        echo "Tomcat service not found. Installing..."
+                        bat "cd /d ${TOMCAT_HOME}\\bin && service.bat install"
+                    } else {
+                        echo "Tomcat service already installed."
+                    }
+                }
+            }
+        }
+
+        stage('Restart Tomcat') {
+            steps {
+                script {
+                    def tomcatRunning = bat(script: "sc query ${TOMCAT_SERVICE_NAME} | findstr RUNNING", returnStatus: true) == 0
+                    if (tomcatRunning) {
+                        echo "Stopping Tomcat..."
+                        bat "sc stop ${TOMCAT_SERVICE_NAME}"
+                        sleep time: 10, unit: 'SECONDS'
+                    } else {
+                        echo "Tomcat is not running. Starting..."
+                    }
+
+                    echo "Starting Tomcat Service..."
+                    bat "sc start ${TOMCAT_SERVICE_NAME}"
+                }
+            }
+        }
+
+        stage('Verify Deployment') {
+            steps {
+                script {
+                    bat """
+                    powershell -Command \"
+                        try {
+                            Invoke-WebRequest -Uri 'http://localhost:8080/ORSProject-04' -UseBasicParsing
+                            Write-Host 'Deployment verified successfully!'
+                        } catch {
+                            Write-Host 'Tomcat is not reachable or app not deployed'
+                        }
+                    \"
+                    """
+                }
+            }
+        }
+
+        /* --------------------------
+           FINAL END PIPELINE STAGE
+        --------------------------- */
+        stage('End Pipeline') {
+            steps {
+                echo "Pipeline execution finished."
+            }
+        }
+    }
+
+    post {
+        always {
+            echo 'Cleaning workspace...'
+            deleteDir()
+            echo 'Pipeline ended.'
+        }
+    }
+}
