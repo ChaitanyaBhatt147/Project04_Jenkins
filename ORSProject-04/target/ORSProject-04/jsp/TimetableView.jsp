@@ -92,7 +92,8 @@
 				</tr>
 				<tr>
 					<th align="left">Exam Date<span style="color: red">*</span></th>
-					<td><input type="text" id="udatee" name="examDate" placeholder="Select Exam Date"
+					<td><input type="text" id="udatee" name="examDate"
+						placeholder="Select Exam Date"
 						value="<%=DataUtility.getDateString(bean.getExamDate())%>"></td>
 					<td style="position: fixed;"><font color="red"> <%=ServletUtility.getErrorMessage("examDate", request)%></font></td>
 				</tr>
@@ -113,10 +114,10 @@
 
 				<tr>
 					<th align="left">Description<span style="color: red">*</span></th>
-					<td align="center">
-                        <textarea style="width: 170px; resize: none;" name="description" rows="3"
-                            placeholder="Enter Short description"><%=DataUtility.getStringData(bean.getDescription()).trim()%></textarea>
-                    </td>
+					<td align="center"><textarea
+							style="width: 170px; resize: none;" name="description" rows="3"
+							placeholder="Enter Short description"><%=DataUtility.getStringData(bean.getDescription()).trim()%></textarea>
+					</td>
 					<td style="position: fixed;"><font color="red"> <%=ServletUtility.getErrorMessage("description", request)%></font></td>
 				</tr>
 				<tr>
@@ -133,15 +134,16 @@
 						type="submit" name="operation" value="<%=TimetableCtl.OP_CANCEL%>">
 						<%
 							} else {
-					%>
+						%>
 					<td align="left" colspan="2"><input type="submit"
 						name="operation" value="<%=TimetableCtl.OP_SAVE%>"> <input
 						type="submit" name="operation" value="<%=TimetableCtl.OP_RESET%>">
 						<%
 							}
-					%>
+						%>
 			</table>
 		</div>
 	</form>
+	<%@ include file="Footer.jsp"%>
 </body>
 </html>

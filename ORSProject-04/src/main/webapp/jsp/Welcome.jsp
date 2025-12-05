@@ -22,8 +22,8 @@
 		%>
 
 		<h2 align="Center">
-			<a style="color: maroon" href=<%=ORSView.GET_MARKSHEET_CTL %>>Click here to see your
-				Marksheet </a>
+			<a style="color: maroon" href=<%=ORSView.GET_MARKSHEET_CTL%>>Click
+				here to see your Marksheet </a>
 		</h2>
 
 		<%
@@ -32,5 +32,6 @@
 		%>
 
 	</form>
+	<%@ include file="Footer.jsp"%>
 </body>
 </html>
