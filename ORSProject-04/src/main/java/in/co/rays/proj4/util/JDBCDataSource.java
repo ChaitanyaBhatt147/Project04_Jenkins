@@ -25,13 +25,13 @@ import com.mchange.v2.c3p0.ComboPooledDataSource;
  * Parameters loaded from the ResourceBundle:
  * </p>
  * <ul>
- *     <li>driver â€“ JDBC driver class</li>
- *     <li>url â€“ Database connection URL</li>
- *     <li>username â€“ DB username</li>
- *     <li>password â€“ DB password</li>
- *     <li>initialpoolsize â€“ starting number of connections</li>
- *     <li>acquireincrement â€“ connections added when pool is exhausted</li>
- *     <li>maxpoolsize â€“ maximum allowed connections</li>
+ *     <li>driver – JDBC driver class</li>
+ *     <li>url – Database connection URL</li>
+ *     <li>username – DB username</li>
+ *     <li>password – DB password</li>
+ *     <li>initialpoolsize – starting number of connections</li>
+ *     <li>acquireincrement – connections added when pool is exhausted</li>
+ *     <li>maxpoolsize – maximum allowed connections</li>
  * </ul>
  *
  * <p>
@@ -58,9 +58,11 @@ public class JDBCDataSource {
      * This ensures Singleton implementation.
      */
     private JDBCDataSource() {
+
         try {
             cpds = new ComboPooledDataSource();
             cpds.setDriverClass(rb.getString("driver"));
+
             String env = System.getProperty("env");
 
             if ("docker".equals(env)) {
@@ -68,6 +70,9 @@ public class JDBCDataSource {
             } else {
                 cpds.setJdbcUrl(rb.getString("url.local"));
             }
+
+           
+            
             cpds.setUser(rb.getString("username"));
             cpds.setPassword(rb.getString("password"));
             cpds.setInitialPoolSize(Integer.parseInt(rb.getString("initialpoolsize")));
