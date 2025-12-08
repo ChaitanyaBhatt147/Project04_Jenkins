@@ -25,13 +25,13 @@ import com.mchange.v2.c3p0.ComboPooledDataSource;
  * Parameters loaded from the ResourceBundle:
  * </p>
  * <ul>
- *     <li>driver – JDBC driver class</li>
- *     <li>url – Database connection URL</li>
- *     <li>username – DB username</li>
- *     <li>password – DB password</li>
- *     <li>initialpoolsize – starting number of connections</li>
- *     <li>acquireincrement – connections added when pool is exhausted</li>
- *     <li>maxpoolsize – maximum allowed connections</li>
+ *     <li>driver â€“ JDBC driver class</li>
+ *     <li>url â€“ Database connection URL</li>
+ *     <li>username â€“ DB username</li>
+ *     <li>password â€“ DB password</li>
+ *     <li>initialpoolsize â€“ starting number of connections</li>
+ *     <li>acquireincrement â€“ connections added when pool is exhausted</li>
+ *     <li>maxpoolsize â€“ maximum allowed connections</li>
  * </ul>
  *
  * <p>
