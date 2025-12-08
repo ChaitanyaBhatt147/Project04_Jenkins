@@ -77,7 +77,7 @@
 				%>
 				<tr>
 					<td style="text-align: center;"><input type="checkbox"
-						name="ids" value="<%=bean.getId()%>"></td>
+						class="case" name="ids" value="<%=bean.getId()%>"></td>
 					<td style="text-align: center;"><%=index++%></td>
 					<td style="text-align: center; text-transform: capitalize;"><%=bean.getName()%></td>
 					<td style="text-align: center; text-transform: capitalize;"><%=bean.getDescription()%></td>
