@@ -18,6 +18,9 @@
 
 		<jsp:useBean id="bean" class="in.co.rays.proj4.bean.UserBean"
 			scope="request"></jsp:useBean>
+		<%
+			HashMap<String, String> map = (HashMap<String, String>) request.getAttribute("map");
+		%>
 
 		<%
 			List<UserBean> roleList = (List<UserBean>) request.getAttribute("roleList");
@@ -78,7 +81,12 @@
 						value="<%=DataUtility.getStringData(bean.getLogin())%>"></td>
 					<td style="position: fixed;"><font color="red"> <%=ServletUtility.getErrorMessage("login", request)%></font></td>
 				</tr>
-				<tr>
+				<%
+					if (bean != null && bean.getId() > 0) {
+				%>
+				<%
+					} else {
+				%><tr>
 					<th align="left">Password<span style="color: red">*</span></th>
 					<td><input type="password" name="password"
 						placeholder="Enter Password"
@@ -92,6 +100,10 @@
 						value="<%=DataUtility.getStringData(bean.getPassword())%>"></td>
 					<td style="position: fixed;"><font color="red"> <%=ServletUtility.getErrorMessage("confirmPassword", request)%></font></td>
 				</tr>
+				<%
+					}
+				%>
+
 				<tr>
 					<th align="left">Date of Birth<span style="width: 98%"
 						style="color: red">*</span></th>
@@ -104,10 +116,6 @@
 					<th align="left">Gender<span style="color: red">*</span></th>
 					<td>
 						<%
-							HashMap<String, String> map = new HashMap<String, String>();
-							map.put("Male", "Male");
-							map.put("Female", "Female");
-
 							String htmlList = HTMLUtility.getList("gender", bean.getGender(), map);
 						%> <%=htmlList%>
 					</td>
@@ -147,6 +155,26 @@
 							}
 						%>
 				</tr>
+				<%
+					if (bean != null && bean.getId() > 0) {
+				%><tr>
+					<td><input type="hidden" name="password"
+						placeholder="Enter Password"
+						value="<%=DataUtility.getStringData(bean.getPassword())%>"></td>
+					<td style="position: fixed;"><font color="red"> <%=ServletUtility.getErrorMessage("password", request)%></font></td>
+				</tr>
+				<tr>
+					<td><input type="hidden" name="confirmPassword"
+						placeholder="Enter Confirm Password"
+						value="<%=DataUtility.getStringData(bean.getPassword())%>"></td>
+					<td style="position: fixed;"><font color="red"> <%=ServletUtility.getErrorMessage("confirmPassword", request)%></font></td>
+				</tr>
+				<%
+					} else {
+				%>
+				<%
+					}
+				%>
 			</table>
 		</div>
 	</form>

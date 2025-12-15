@@ -20,6 +20,7 @@
 		<%@ include file="Header.jsp"%>
 		<jsp:useBean id="bean" class="in.co.rays.proj4.bean.UserBean"
 			scope="request"></jsp:useBean>
+			<% HashMap <String,String> map =(HashMap <String,String>)request.getAttribute("map"); %>
 
 		<div align="center">
 			<h1 align="center" style="margin-bottom: -15; color: navy">User
@@ -95,11 +96,6 @@
 					<th align="left">Gender<span style="color: red">*</span></th>
 					<td>
 						<%
-							HashMap<String, String> map = new HashMap<String, String>();
-						    
-							map.put("Female", "Female");
-							map.put("Male", "Male");
-
 							String htmlList = HTMLUtility.getList("gender", bean.getGender(), map);
 						%> <%=htmlList%>
 
