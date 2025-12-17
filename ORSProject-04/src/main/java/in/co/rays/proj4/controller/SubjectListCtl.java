@@ -8,6 +8,8 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.log4j.Logger;
+
 import in.co.rays.proj4.bean.BaseBean;
 import in.co.rays.proj4.bean.SubjectBean;
 import in.co.rays.proj4.exception.ApplicationException;
@@ -34,6 +36,9 @@ import in.co.rays.proj4.util.ServletUtility;
 @WebServlet(name = "SubjectListCtl", urlPatterns = { "/ctl/SubjectListCtl" })
 public class SubjectListCtl extends BaseCtl {
 
+    /** Log4j Logger */
+    private static final Logger log = Logger.getLogger(SubjectListCtl.class);
+
     /**
      * Preloads subject and course lists and sets them as request attributes
      * ("subjectList", "courseList") for dropdowns or auxiliary displays in the view.
@@ -42,6 +47,7 @@ public class SubjectListCtl extends BaseCtl {
      */
     @Override
     protected void preload(HttpServletRequest request) {
+        log.debug("SubjectListCtl preload() called");
 
         SubjectModel subjectModel = new SubjectModel();
         CourseModel courseModel = new CourseModel();
@@ -49,11 +55,14 @@ public class SubjectListCtl extends BaseCtl {
         try {
             List subjectList = subjectModel.list();
             request.setAttribute("subjectList", subjectList);
+            log.info("Preloaded subject list, size=" + subjectList.size());
 
             List courseList = courseModel.list();
             request.setAttribute("courseList", courseList);
+            log.info("Preloaded course list, size=" + courseList.size());
 
         } catch (ApplicationException e) {
+            log.error("ApplicationException in preload()", e);
             e.printStackTrace();
         }
     }
@@ -67,6 +76,7 @@ public class SubjectListCtl extends BaseCtl {
      */
     @Override
     protected BaseBean populateBean(HttpServletRequest request) {
+        log.debug("SubjectListCtl populateBean() called");
 
         SubjectBean bean = new SubjectBean();
 
@@ -91,6 +101,8 @@ public class SubjectListCtl extends BaseCtl {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
+        log.info("SubjectListCtl doGet() started");
+
         int pageNo = 1;
         int pageSize = DataUtility.getInt(PropertyReader.getValue("page.size"));
 
@@ -103,6 +115,9 @@ public class SubjectListCtl extends BaseCtl {
 
             if (list == null || list.isEmpty()) {
                 ServletUtility.setErrorMessage("No record found", request);
+                log.warn("No records found in doGet()");
+            } else {
+                log.info("Fetched " + list.size() + " records for pageNo=" + pageNo);
             }
 
             ServletUtility.setList(list, request);
@@ -112,8 +127,10 @@ public class SubjectListCtl extends BaseCtl {
             request.setAttribute("nextListSize", next.size());
 
             ServletUtility.forward(getView(), request, response);
+            log.info("doGet() forwarded to view: " + getView());
 
         } catch (ApplicationException e) {
+            log.error("ApplicationException in doGet()", e);
             e.printStackTrace();
             ServletUtility.handleException(e, request, response);
             return;
@@ -133,6 +150,8 @@ public class SubjectListCtl extends BaseCtl {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+
+        log.info("SubjectListCtl doPost() started");
 
         List list = null;
         List next = null;
@@ -160,8 +179,9 @@ public class SubjectListCtl extends BaseCtl {
                 } else if (OP_PREVIOUS.equalsIgnoreCase(op) && pageNo > 1) {
                     pageNo--;
                 }
-
+                log.debug("Pagination operation: " + op + ", pageNo=" + pageNo);
             } else if (OP_NEW.equalsIgnoreCase(op)) {
+                log.info("New operation, redirecting to SUBJECT_CTL");
                 ServletUtility.redirect(ORSView.SUBJECT_CTL, request, response);
                 return;
 
@@ -173,16 +193,20 @@ public class SubjectListCtl extends BaseCtl {
                         deletebean.setId(DataUtility.getInt(id));
                         model.delete(deletebean);
                         ServletUtility.setSuccessMessage("Data is deleted successfully", request);
+                        log.info("Deleted Subject with id=" + id);
                     }
                 } else {
                     ServletUtility.setErrorMessage("Select at least one record", request);
+                    log.warn("Delete operation failed: No record selected");
                 }
 
             } else if (OP_RESET.equalsIgnoreCase(op)) {
+                log.info("Reset operation, redirecting to SUBJECT_LIST_CTL");
                 ServletUtility.redirect(ORSView.SUBJECT_LIST_CTL, request, response);
                 return;
 
             } else if (OP_BACK.equalsIgnoreCase(op)) {
+                log.info("Back operation, redirecting to SUBJECT_LIST_CTL");
                 ServletUtility.redirect(ORSView.SUBJECT_LIST_CTL, request, response);
                 return;
             }
@@ -192,6 +216,9 @@ public class SubjectListCtl extends BaseCtl {
 
             if (list == null || list.size() == 0) {
                 ServletUtility.setErrorMessage("No record found ", request);
+                log.warn("No records found in doPost()");
+            } else {
+                log.info("Fetched " + list.size() + " records for pageNo=" + pageNo + " in doPost()");
             }
 
             ServletUtility.setList(list, request);
@@ -201,7 +228,10 @@ public class SubjectListCtl extends BaseCtl {
             request.setAttribute("nextListSize", next.size());
 
             ServletUtility.forward(getView(), request, response);
+            log.info("doPost() forwarded to view: " + getView());
+
         } catch (ApplicationException e) {
+            log.error("ApplicationException in doPost()", e);
             e.printStackTrace();
             ServletUtility.handleException(e, request, response);
             return;
@@ -215,6 +245,7 @@ public class SubjectListCtl extends BaseCtl {
      */
     @Override
     protected String getView() {
+        log.debug("Returning Subject List view page");
         return ORSView.SUBJECT_LIST_VIEW;
     }
 }

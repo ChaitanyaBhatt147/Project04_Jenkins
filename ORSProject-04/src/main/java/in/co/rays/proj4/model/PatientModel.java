@@ -12,11 +12,14 @@ import in.co.rays.proj4.exception.DatabaseException;
 import in.co.rays.proj4.exception.DuplicateRecordException;
 import in.co.rays.proj4.util.JDBCDataSource;
 
+import org.apache.log4j.Logger;
 
 public class PatientModel {
 
+    private static Logger log = Logger.getLogger(PatientModel.class);
 
     public static Integer nextPk() throws DatabaseException {
+        log.debug("Entering nextPk()");
         Connection conn = null;
         int pk = 0;
 
@@ -29,22 +32,25 @@ public class PatientModel {
             }
             rs.close();
             pstmt.close();
+            log.debug("Next PK retrieved: " + (pk + 1));
         } catch (Exception e) {
+            log.error("DatabaseException in nextPk()", e);
             throw new DatabaseException("Exception in getting PK");
         } finally {
             JDBCDataSource.closeConnection(conn);
+            log.debug("Connection closed in nextPk()");
         }
 
         return pk + 1;
     }
 
-
     public void add(PatientBean bean) throws ApplicationException, DuplicateRecordException {
+        log.debug("Entering add() with PatientBean: " + bean);
         Connection conn = null;
 
-        // Check for duplicate patient name
         PatientBean existing = findByName(bean.getName());
         if (existing != null && existing.getId() != bean.getId()) {
+            log.warn("Duplicate patient name detected: " + bean.getName());
             throw new DuplicateRecordException("Patient Name already exists");
         }
 
@@ -68,24 +74,32 @@ public class PatientModel {
             pstmt.executeUpdate();
             conn.commit();
             pstmt.close();
+            log.info("Patient added successfully with PK: " + pk);
         } catch (Exception e) {
+            log.error("Exception in add()", e);
             try {
-                conn.rollback();
+                if (conn != null) {
+                    conn.rollback();
+                    log.debug("Transaction rollback in add()");
+                }
             } catch (Exception ex) {
+                log.error("Rollback failed in add()", ex);
                 throw new ApplicationException("Add rollback exception: " + ex.getMessage());
             }
             throw new ApplicationException("Exception in adding Patient");
         } finally {
             JDBCDataSource.closeConnection(conn);
+            log.debug("Connection closed in add()");
         }
     }
 
-
     public void update(PatientBean bean) throws ApplicationException, DuplicateRecordException {
+        log.debug("Entering update() with PatientBean: " + bean);
         Connection conn = null;
 
         PatientBean existing = findByName(bean.getName());
         if (existing != null && existing.getId() != bean.getId()) {
+            log.warn("Duplicate patient name detected during update: " + bean.getName());
             throw new DuplicateRecordException("Patient Name already exists");
         }
 
@@ -109,20 +123,27 @@ public class PatientModel {
             pstmt.executeUpdate();
             conn.commit();
             pstmt.close();
+            log.info("Patient updated successfully with ID: " + bean.getId());
         } catch (Exception e) {
+            log.error("Exception in update()", e);
             try {
-                conn.rollback();
+                if (conn != null) {
+                    conn.rollback();
+                    log.debug("Transaction rollback in update()");
+                }
             } catch (Exception ex) {
+                log.error("Rollback failed in update()", ex);
                 throw new ApplicationException("Update rollback exception: " + ex.getMessage());
             }
             throw new ApplicationException("Exception in updating Patient");
         } finally {
             JDBCDataSource.closeConnection(conn);
+            log.debug("Connection closed in update()");
         }
     }
 
-
     public void delete(long id) throws ApplicationException {
+        log.debug("Entering delete() for ID: " + id);
         Connection conn = null;
         try {
             conn = JDBCDataSource.getConnection();
@@ -133,20 +154,27 @@ public class PatientModel {
             pstmt.executeUpdate();
             conn.commit();
             pstmt.close();
+            log.info("Patient deleted successfully with ID: " + id);
         } catch (Exception e) {
+            log.error("Exception in delete()", e);
             try {
-                conn.rollback();
+                if (conn != null) {
+                    conn.rollback();
+                    log.debug("Transaction rollback in delete()");
+                }
             } catch (Exception ex) {
+                log.error("Rollback failed in delete()", ex);
                 throw new ApplicationException("Delete rollback exception: " + ex.getMessage());
             }
             throw new ApplicationException("Exception in deleting Patient");
         } finally {
             JDBCDataSource.closeConnection(conn);
+            log.debug("Connection closed in delete()");
         }
     }
 
-
     public PatientBean findByPk(long id) throws ApplicationException {
+        log.debug("Entering findByPk() with ID: " + id);
         PatientBean bean = null;
         Connection conn = null;
         String sql = "SELECT * FROM st_patient WHERE id=?";
@@ -161,17 +189,20 @@ public class PatientModel {
             }
             rs.close();
             pstmt.close();
+            log.debug("findByPk() result: " + bean);
         } catch (Exception e) {
+            log.error("Exception in findByPk()", e);
             throw new ApplicationException("Exception in getting Patient by PK");
         } finally {
             JDBCDataSource.closeConnection(conn);
+            log.debug("Connection closed in findByPk()");
         }
 
         return bean;
     }
 
-
     public PatientBean findByName(String name) throws ApplicationException {
+        log.debug("Entering findByName() with name: " + name);
         PatientBean bean = null;
         Connection conn = null;
         String sql = "SELECT * FROM st_patient WHERE name=?";
@@ -186,21 +217,27 @@ public class PatientModel {
             }
             rs.close();
             pstmt.close();
+            log.debug("findByName() result: " + bean);
         } catch (Exception e) {
+            log.error("Exception in findByName()", e);
             throw new ApplicationException("Exception in getting Patient by Name");
         } finally {
             JDBCDataSource.closeConnection(conn);
+            log.debug("Connection closed in findByName()");
         }
 
         return bean;
     }
 
-
     public List<PatientBean> list() throws ApplicationException {
-        return search(null, 0, 0);
+        log.debug("Entering list()");
+        List<PatientBean> list = search(null, 0, 0);
+        log.debug("list() returned " + list.size() + " records");
+        return list;
     }
 
     public List<PatientBean> search(PatientBean bean, int pageNo, int pageSize) throws ApplicationException {
+        log.debug("Entering search() with PatientBean: " + bean + ", pageNo: " + pageNo + ", pageSize: " + pageSize);
         Connection conn = null;
         StringBuilder sql = new StringBuilder("SELECT * FROM st_patient WHERE 1=1 ");
 
@@ -236,10 +273,13 @@ public class PatientModel {
             }
             rs.close();
             pstmt.close();
+            log.debug("search() returned " + list.size() + " records");
         } catch (Exception e) {
+            log.error("Exception in search()", e);
             throw new ApplicationException("Exception in searching Patient");
         } finally {
             JDBCDataSource.closeConnection(conn);
+            log.debug("Connection closed in search()");
         }
 
         return list;

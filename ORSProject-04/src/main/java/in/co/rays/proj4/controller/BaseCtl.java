@@ -7,6 +7,8 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.log4j.Logger;
+
 import in.co.rays.proj4.bean.BaseBean;
 import in.co.rays.proj4.bean.UserBean;
 import in.co.rays.proj4.util.DataUtility;
@@ -24,8 +26,10 @@ import in.co.rays.proj4.util.ServletUtility;
  * author Chaitanya Bhatt
  * 
  * @version 1.0
- */
+ */	
 public abstract class BaseCtl extends HttpServlet {
+
+	private static final Logger log = Logger.getLogger(BaseCtl.class);
 
 	/** Operation constants used across the project. */
 	public static final String OP_SAVE = "Save";
@@ -55,6 +59,7 @@ public abstract class BaseCtl extends HttpServlet {
 	 * @return true if validation passes, false otherwise
 	 */
 	protected boolean validate(HttpServletRequest request) {
+		log.debug("BaseCtl validate() called");
 		return true;
 	}
 
@@ -65,6 +70,7 @@ public abstract class BaseCtl extends HttpServlet {
 	 * @param request the HttpServletRequest object
 	 */
 	protected void preload(HttpServletRequest request) {
+		log.debug("BaseCtl preload() called");
 	}
 
 	/**
@@ -75,6 +81,7 @@ public abstract class BaseCtl extends HttpServlet {
 	 * @return a populated BaseBean instance
 	 */
 	protected BaseBean populateBean(HttpServletRequest request) {
+		log.debug("BaseCtl populateBean() called");
 		return null;
 	}
 
@@ -88,12 +95,15 @@ public abstract class BaseCtl extends HttpServlet {
 	 */
 	protected BaseBean populateDTO(BaseBean dto, HttpServletRequest request) {
 
+		log.debug("BaseCtl populateDTO() started");
+
 		String createdBy = request.getParameter("createdBy");
 		String modifiedBy = null;
 
 		UserBean userbean = (UserBean) request.getSession().getAttribute("user");
 
 		if (userbean == null) {
+			log.info("User session not found, assigning root user");
 			createdBy = "root";
 			modifiedBy = "root";
 		} else {
@@ -110,12 +120,15 @@ public abstract class BaseCtl extends HttpServlet {
 
 		if (cdt > 0) {
 			dto.setCreatedDatetime(DataUtility.getTimestamp(cdt));
+			log.debug("CreatedDatetime set from request parameter");
 		} else {
 			dto.setCreatedDatetime(DataUtility.getCurrentTimestamp());
+			log.debug("CreatedDatetime set to current timestamp");
 		}
 
 		dto.setModifiedDatetime(DataUtility.getCurrentTimestamp());
 
+		log.debug("BaseCtl populateDTO() completed");
 		return dto;
 	}
 
@@ -133,21 +146,31 @@ public abstract class BaseCtl extends HttpServlet {
 	protected void service(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
 
+		log.info("BaseCtl service() started");
+
 		preload(request);
 
 		String op = DataUtility.getString(request.getParameter("operation"));
+		log.debug("Operation received: " + op);
 
 		if (DataValidator.isNotNull(op) && !OP_CANCEL.equalsIgnoreCase(op) && !OP_VIEW.equalsIgnoreCase(op)
 				&& !OP_DELETE.equalsIgnoreCase(op) && !OP_RESET.equalsIgnoreCase(op)) {
 
 			if (!validate(request)) {
+				log.warn("Validation failed for operation: " + op);
 				BaseBean bean = (BaseBean) populateBean(request);
 				ServletUtility.setBean(bean, request);
 				ServletUtility.forward(getView(), request, response);
 				return;
 			}
 		}
+
 		super.service(request, response);
+
+		log.info("Request Method: " + request.getMethod());
+		log.info("Servlet Path: " + request.getServletPath());
+		log.info("Server Name: " + request.getServerName());
+
 		System.out.println("server name: =====> " + request.getServerName());
 		System.out.println("submit operation hai ya nahi ==== " + response.encodeUrl(op));
 		System.out.println("super ne " + request.getMethod() + " chali");

@@ -8,6 +8,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
+import org.apache.log4j.Logger;
+
 import in.co.rays.proj4.bean.BaseBean;
 import in.co.rays.proj4.bean.UserBean;
 import in.co.rays.proj4.exception.ApplicationException;
@@ -39,6 +41,9 @@ import in.co.rays.proj4.util.ServletUtility;
 @WebServlet(name = "MyProfileCtl", urlPatterns = { "/ctl/MyProfileCtl" })
 public class MyProfileCtl extends BaseCtl {
 
+    /** Log4j Logger */
+    private static final Logger log = Logger.getLogger(MyProfileCtl.class);
+
     /** Operation constant to change password. */
     public static final String OP_CHANGE_MY_PASSWORD = "Change Password";
 
@@ -58,51 +63,65 @@ public class MyProfileCtl extends BaseCtl {
     @Override
     protected boolean validate(HttpServletRequest request) {
 
+        log.debug("MyProfileCtl validate() started");
+
         boolean pass = true;
 
         String op = DataUtility.getString(request.getParameter("operation"));
+        log.debug("Operation for validation: " + op);
 
         if (OP_CHANGE_MY_PASSWORD.equalsIgnoreCase(op) || op == null) {
+            log.debug("Validation skipped for Change Password or null operation");
             return pass;
         }
 
         if (DataValidator.isNull(request.getParameter("firstName"))) {
+            log.warn("First Name is required");
             request.setAttribute("firstName", PropertyReader.getValue("error.require", "First Name"));
             pass = false;
         } else if (!DataValidator.isName(request.getParameter("firstName"))) {
+            log.warn("Invalid First Name");
             request.setAttribute("firstName", "Invalid First Name");
             pass = false;
         }
 
         if (DataValidator.isNull(request.getParameter("lastName"))) {
+            log.warn("Last Name is required");
             request.setAttribute("lastName", PropertyReader.getValue("error.require", "Last Name"));
             pass = false;
         } else if (!DataValidator.isName(request.getParameter("lastName"))) {
+            log.warn("Invalid Last Name");
             request.setAttribute("lastName", "Invalid Last Name");
             pass = false;
         }
 
         if (DataValidator.isNull(request.getParameter("gender"))) {
+            log.warn("Gender is required");
             request.setAttribute("gender", PropertyReader.getValue("error.require", "Gender"));
             pass = false;
         }
 
         if (DataValidator.isNull(request.getParameter("mobileNo"))) {
+            log.warn("Mobile No is required");
             request.setAttribute("mobileNo", PropertyReader.getValue("error.require", "MobileNo"));
             pass = false;
         } else if (!DataValidator.isPhoneLength(request.getParameter("mobileNo"))) {
+            log.warn("Mobile No length invalid");
             request.setAttribute("mobileNo", "Mobile No must have 10 digits");
             pass = false;
         } else if (!DataValidator.isPhoneNo(request.getParameter("mobileNo"))) {
+            log.warn("Invalid Mobile No");
             request.setAttribute("mobileNo", "Invalid Mobile No");
             pass = false;
         }
 
         if (DataValidator.isNull(request.getParameter("dob"))) {
+            log.warn("Date of Birth is required");
             request.setAttribute("dob", PropertyReader.getValue("error.require", "Date Of Birth"));
             pass = false;
         }
 
+        log.debug("MyProfileCtl validate() ended with status: " + pass);
         return pass;
     }
 
@@ -116,24 +135,21 @@ public class MyProfileCtl extends BaseCtl {
     @Override
     protected BaseBean populateBean(HttpServletRequest request) {
 
+        log.debug("MyProfileCtl populateBean() started");
+
         UserBean bean = new UserBean();
 
         bean.setId(DataUtility.getLong(request.getParameter("id")));
-
         bean.setLogin(DataUtility.getString(request.getParameter("login")));
-
         bean.setFirstName(DataUtility.getString(request.getParameter("firstName")));
-
         bean.setLastName(DataUtility.getString(request.getParameter("lastName")));
-
         bean.setMobileNo(DataUtility.getString(request.getParameter("mobileNo")));
-
         bean.setGender(DataUtility.getString(request.getParameter("gender")));
-
         bean.setDob(DataUtility.getDate(request.getParameter("dob")));
 
         populateDTO(bean, request);
 
+        log.debug("MyProfileCtl populateBean() ended");
         return bean;
     }
 
@@ -149,6 +165,8 @@ public class MyProfileCtl extends BaseCtl {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
+        log.info("MyProfileCtl doGet() started");
+
         HttpSession session = request.getSession(true);
         UserBean user = (UserBean) session.getAttribute("user");
         long id = user.getId();
@@ -157,15 +175,19 @@ public class MyProfileCtl extends BaseCtl {
 
         if (id > 0) {
             try {
+                log.debug("Fetching user profile for id: " + id);
                 UserBean bean = model.findByPk(id);
                 ServletUtility.setBean(bean, request);
             } catch (ApplicationException e) {
+                log.error("Exception in MyProfileCtl doGet()", e);
                 e.printStackTrace();
                 ServletUtility.handleException(e, request, response);
                 return;
             }
         }
+
         ServletUtility.forward(getView(), request, response);
+        log.info("MyProfileCtl doGet() ended");
     }
 
     /**
@@ -180,12 +202,15 @@ public class MyProfileCtl extends BaseCtl {
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
+        log.info("MyProfileCtl doPost() started");
+
         HttpSession session = request.getSession(true);
 
         UserBean user = (UserBean) session.getAttribute("user");
         long id = user.getId();
 
         String op = DataUtility.getString(request.getParameter("operation"));
+        log.debug("Operation received: " + op);
 
         UserModel model = new UserModel();
 
@@ -193,6 +218,7 @@ public class MyProfileCtl extends BaseCtl {
             UserBean bean = (UserBean) populateBean(request);
             try {
                 if (id > 0) {
+                    log.info("Updating user profile for id: " + id);
                     user.setFirstName(bean.getFirstName());
                     user.setLastName(bean.getLastName());
                     user.setGender(bean.getGender());
@@ -203,18 +229,23 @@ public class MyProfileCtl extends BaseCtl {
                 ServletUtility.setBean(bean, request);
                 ServletUtility.setSuccessMessage("Profile has been updated Successfully. ", request);
             } catch (DuplicateRecordException e) {
+                log.warn("Duplicate record exception while updating profile");
                 ServletUtility.setBean(bean, request);
                 ServletUtility.setErrorMessage("Login id already exists", request);
             } catch (ApplicationException e) {
+                log.error("ApplicationException in MyProfileCtl doPost()", e);
                 e.printStackTrace();
                 ServletUtility.handleException(e, request, response);
                 return;
             }
         } else if (OP_CHANGE_MY_PASSWORD.equalsIgnoreCase(op)) {
+            log.info("Redirecting to Change Password Controller");
             ServletUtility.redirect(ORSView.CHANGE_PASSWORD_CTL, request, response);
             return;
         }
+
         ServletUtility.forward(getView(), request, response);
+        log.info("MyProfileCtl doPost() ended");
     }
 
     /**
@@ -224,6 +255,7 @@ public class MyProfileCtl extends BaseCtl {
      */
     @Override
     protected String getView() {
+        log.debug("Returning My Profile View");
         return ORSView.MY_PROFILE_VIEW;
     }
 }

@@ -8,6 +8,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
+import org.apache.log4j.Logger;
+
 import in.co.rays.proj4.bean.BaseBean;
 import in.co.rays.proj4.bean.RoleBean;
 import in.co.rays.proj4.bean.UserBean;
@@ -41,6 +43,8 @@ import in.co.rays.proj4.util.ServletUtility;
 @WebServlet(name = "LoginCtl", urlPatterns = { "/LoginCtl" })
 public class LoginCtl extends BaseCtl {
 
+    private static final Logger log = Logger.getLogger(LoginCtl.class);
+
     public static final String OP_REGISTER = "Register";
     public static final String OP_SIGN_IN = "Sign In";
     public static final String OP_SIGN_UP = "Sign Up";
@@ -60,25 +64,34 @@ public class LoginCtl extends BaseCtl {
     @Override
     protected boolean validate(HttpServletRequest request) {
 
+        log.debug("LoginCtl validate() started");
+
         boolean pass = true;
 
         String op = request.getParameter("operation");
 
         if (OP_SIGN_UP.equals(op) || OP_LOG_OUT.equals(op)) {
+            log.debug("Validation skipped for operation: " + op);
             return pass;
         }
 
         if (DataValidator.isNull(request.getParameter("login"))) {
+            log.warn("Login id is null");
             request.setAttribute("login", PropertyReader.getValue("error.require", "Login Id"));
             pass = false;
         } else if (!DataValidator.isEmail(request.getParameter("login"))) {
+            log.warn("Invalid email format for login");
             request.setAttribute("login", PropertyReader.getValue("error.email", "Login "));
             pass = false;
         }
+
         if (DataValidator.isNull(request.getParameter("password"))) {
+            log.warn("Password is null");
             request.setAttribute("password", PropertyReader.getValue("error.require", "Password"));
             pass = false;
         }
+
+        log.debug("LoginCtl validate() completed with status: " + pass);
         return pass;
     }
 
@@ -90,10 +103,14 @@ public class LoginCtl extends BaseCtl {
      */
     @Override
     protected BaseBean populateBean(HttpServletRequest request) {
+
+        log.debug("LoginCtl populateBean() called");
+
         UserBean bean = new UserBean();
         bean.setId(DataUtility.getLong(request.getParameter("id")));
         bean.setLogin(DataUtility.getString(request.getParameter("login")));
         bean.setPassword(DataUtility.getString(request.getParameter("password")));
+
         return bean;
     }
 
@@ -109,16 +126,19 @@ public class LoginCtl extends BaseCtl {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
-        HttpSession session = request.getSession();
+        log.info("LoginCtl doGet() called");
 
+        HttpSession session = request.getSession();
         String op = DataUtility.getString(request.getParameter("operation"));
 
         if (OP_LOG_OUT.equals(op)) {
+            log.info("Logout requested");
             session.invalidate();
             ServletUtility.setSuccessMessage("Logout Successful!", request);
             ServletUtility.forward(getView(), request, response);
             return;
         }
+
         ServletUtility.forward(getView(), request, response);
     }
 
@@ -138,14 +158,17 @@ public class LoginCtl extends BaseCtl {
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
-        HttpSession session = request.getSession();
+        log.info("LoginCtl doPost() started");
 
+        HttpSession session = request.getSession();
         String op = DataUtility.getString(request.getParameter("operation"));
 
         UserModel model = new UserModel();
         RoleModel role = new RoleModel();
 
         if (OP_SIGN_IN.equalsIgnoreCase(op)) {
+
+            log.info("Sign In operation initiated");
 
             UserBean bean = (UserBean) populateBean(request);
 
@@ -154,29 +177,39 @@ public class LoginCtl extends BaseCtl {
 
                 if (bean != null) {
 
+                    log.info("Authentication successful for login: " + bean.getLogin());
+
                     session.setAttribute("user", bean);
 
                     RoleBean rolebean = role.findByPk(bean.getRoleId());
-
                     if (rolebean != null) {
                         session.setAttribute("role", rolebean.getName());
+                        log.debug("User role set in session: " + rolebean.getName());
                     }
+
                     ServletUtility.redirect(ORSView.WELCOME_CTL, request, response);
                     return;
+
                 } else {
+                    log.warn("Authentication failed for login: " + bean.getLogin());
                     bean = (UserBean) populateBean(request);
                     ServletUtility.setBean(bean, request);
                     ServletUtility.setErrorMessage("Invalid LoginId And Password", request);
                 }
+
             } catch (ApplicationException e) {
+                log.error("ApplicationException during login", e);
                 e.printStackTrace();
                 ServletUtility.handleException(e, request, response);
                 return;
             }
+
         } else if (OP_SIGN_UP.equalsIgnoreCase(op)) {
+            log.info("Sign Up requested – redirecting to registration");
             ServletUtility.redirect(ORSView.USER_REGISTRATION_CTL, request, response);
             return;
         }
+
         ServletUtility.forward(getView(), request, response);
     }
 

@@ -8,6 +8,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
+import org.apache.log4j.Logger;
+
 import in.co.rays.proj4.bean.BaseBean;
 import in.co.rays.proj4.bean.UserBean;
 import in.co.rays.proj4.exception.ApplicationException;
@@ -33,6 +35,8 @@ import in.co.rays.proj4.util.ServletUtility;
 @WebServlet(name = "ChangePasswordCtl", urlPatterns = { "/ctl/ChangePasswordCtl" })
 public class ChangePasswordCtl extends BaseCtl {
 
+    private static final Logger log = Logger.getLogger(ChangePasswordCtl.class);
+
     /** Operation constant for "Change My Profile" action. */
     public static final String OP_CHANGE_MY_PROFILE = "Change My Profile";
 
@@ -55,44 +59,56 @@ public class ChangePasswordCtl extends BaseCtl {
     @Override
     protected boolean validate(HttpServletRequest request) {
 
+        log.debug("ChangePasswordCtl validate() started");
+
         boolean pass = true;
 
         String op = request.getParameter("operation");
+        log.debug("Operation received: " + op);
 
         if (OP_CHANGE_MY_PROFILE.equalsIgnoreCase(op)) {
+            log.info("Validation skipped for Change My Profile operation");
             return pass;
         }
 
         if (DataValidator.isNull(request.getParameter("oldPassword"))) {
+            log.warn("Old password is missing");
             request.setAttribute("oldPassword", PropertyReader.getValue("error.require", "Old Password"));
             pass = false;
         } else if (request.getParameter("oldPassword").equals(request.getParameter("newPassword"))) {
+            log.warn("Old password and new password are same");
             request.setAttribute("newPassword", "Old and New passwords should be different");
             pass = false;
         }
 
         if (DataValidator.isNull(request.getParameter("newPassword"))) {
+            log.warn("New password is missing");
             request.setAttribute("newPassword", PropertyReader.getValue("error.require", "New Password"));
             pass = false;
         } else if (!DataValidator.isPasswordLength(request.getParameter("newPassword"))) {
+            log.warn("New password length validation failed");
             request.setAttribute("newPassword", "Password should be 8 to 12 characters");
             pass = false;
         } else if (!DataValidator.isPassword(request.getParameter("newPassword"))) {
+            log.warn("New password complexity validation failed");
             request.setAttribute("newPassword", "Must contain uppercase, lowercase, digit & special character");
             pass = false;
         }
 
         if (DataValidator.isNull(request.getParameter("confirmPassword"))) {
+            log.warn("Confirm password is missing");
             request.setAttribute("confirmPassword", PropertyReader.getValue("error.require", "Confirm Password"));
             pass = false;
         }
 
         if (!request.getParameter("newPassword").equals(request.getParameter("confirmPassword"))
                 && !"".equals(request.getParameter("confirmPassword"))) {
+            log.warn("New password and confirm password do not match");
             request.setAttribute("confirmPassword", "New and confirm passwords not matched");
             pass = false;
         }
 
+        log.debug("ChangePasswordCtl validate() completed with status: " + pass);
         return pass;
     }
 
@@ -109,6 +125,8 @@ public class ChangePasswordCtl extends BaseCtl {
     @Override
     protected BaseBean populateBean(HttpServletRequest request) {
 
+        log.debug("ChangePasswordCtl populateBean() started");
+
         UserBean bean = new UserBean();
 
         bean.setPassword(DataUtility.getString(request.getParameter("oldPassword")));
@@ -116,6 +134,7 @@ public class ChangePasswordCtl extends BaseCtl {
 
         populateDTO(bean, request);
 
+        log.debug("ChangePasswordCtl populateBean() completed");
         return bean;
     }
 
@@ -129,6 +148,8 @@ public class ChangePasswordCtl extends BaseCtl {
      */
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+
+        log.info("ChangePasswordCtl doGet() called");
         ServletUtility.forward(getView(), request, response);
     }
 
@@ -150,8 +171,12 @@ public class ChangePasswordCtl extends BaseCtl {
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
+        log.info("ChangePasswordCtl doPost() started");
+
         String op = DataUtility.getString(request.getParameter("operation"));
         String newPassword = (String) request.getParameter("newPassword");
+
+        log.debug("Operation: " + op);
 
         UserBean bean = (UserBean) populateBean(request);
         UserModel model = new UserModel();
@@ -162,24 +187,31 @@ public class ChangePasswordCtl extends BaseCtl {
 
         if (OP_SAVE.equalsIgnoreCase(op)) {
             try {
+                log.info("Attempting password change for userId: " + id);
                 boolean flag = model.changePassword(id, bean.getPassword(), newPassword);
                 if (flag == true) {
+                    log.info("Password changed successfully");
                     bean = model.findByLogin(user.getLogin());
                     session.setAttribute("user", bean);
                     ServletUtility.setBean(bean, request);
                     ServletUtility.setSuccessMessage("Password has been changed Successfully", request);
                 }
             } catch (RecordNotFoundException e) {
+                log.warn("Invalid old password entered", e);
                 ServletUtility.setErrorMessage("Old Password is Invalid", request);
             } catch (ApplicationException e) {
+                log.error("ApplicationException occurred while changing password", e);
                 e.printStackTrace();
                 ServletUtility.handleException(e, request, response);
                 return;
             }
         } else if (OP_CHANGE_MY_PROFILE.equalsIgnoreCase(op)) {
+            log.info("Redirecting to My Profile controller");
             ServletUtility.redirect(ORSView.MY_PROFILE_CTL, request, response);
             return;
         }
+
+        log.info("Forwarding to Change Password view");
         ServletUtility.forward(ORSView.CHANGE_PASSWORD_VIEW, request, response);
     }
 

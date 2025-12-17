@@ -7,6 +7,8 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.log4j.Logger;
+
 import in.co.rays.proj4.bean.BaseBean;
 import in.co.rays.proj4.bean.RoleBean;
 import in.co.rays.proj4.exception.ApplicationException;
@@ -34,6 +36,9 @@ import in.co.rays.proj4.util.ServletUtility;
 @WebServlet(name = "RoleCtl", urlPatterns = { "/ctl/RoleCtl" })
 public class RoleCtl extends BaseCtl {
 
+    /** Log4j Logger */
+    private static final Logger log = Logger.getLogger(RoleCtl.class);
+
     /**
      * Validates the role form inputs.
      * <ul>
@@ -46,6 +51,8 @@ public class RoleCtl extends BaseCtl {
      */
     @Override
     protected boolean validate(HttpServletRequest request) {
+
+        log.debug("RoleCtl validate() started");
 
         boolean pass = true;
 
@@ -62,6 +69,7 @@ public class RoleCtl extends BaseCtl {
             pass = false;
         }
 
+        log.debug("RoleCtl validate() completed with status: " + pass);
         return pass;
     }
 
@@ -75,6 +83,8 @@ public class RoleCtl extends BaseCtl {
     @Override
     protected BaseBean populateBean(HttpServletRequest request) {
 
+        log.debug("RoleCtl populateBean() started");
+
         RoleBean bean = new RoleBean();
 
         bean.setId(DataUtility.getLong(request.getParameter("id")));
@@ -83,6 +93,7 @@ public class RoleCtl extends BaseCtl {
 
         populateDTO(bean, request);
 
+        log.debug("RoleCtl populateBean() completed");
         return bean;
     }
 
@@ -98,21 +109,27 @@ public class RoleCtl extends BaseCtl {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
+        log.info("RoleCtl doGet() started");
+
         long id = DataUtility.getLong(request.getParameter("id"));
 
         RoleModel model = new RoleModel();
 
         if (id > 0) {
             try {
+                log.debug("Fetching role by ID: " + id);
                 RoleBean bean = model.findByPk(id);
                 ServletUtility.setBean(bean, request);
             } catch (ApplicationException e) {
+                log.error("Error fetching role by ID: " + id, e);
                 e.printStackTrace();
                 ServletUtility.handleException(e, request, response);
                 return;
             }
         }
+
         ServletUtility.forward(getView(), request, response);
+        log.info("RoleCtl doGet() completed");
     }
 
     /**
@@ -132,11 +149,14 @@ public class RoleCtl extends BaseCtl {
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
+        log.info("RoleCtl doPost() started");
+
         String op = DataUtility.getString(request.getParameter("operation"));
+        long id = DataUtility.getLong(request.getParameter("id"));
+
+        log.debug("Operation: " + op);
 
         RoleModel model = new RoleModel();
-
-        long id = DataUtility.getLong(request.getParameter("id"));
 
         if (OP_SAVE.equalsIgnoreCase(op)) {
 
@@ -144,46 +164,60 @@ public class RoleCtl extends BaseCtl {
 
             try {
                 long pk = model.add(bean);
+                log.info("Role added successfully with PK: " + pk);
                 ServletUtility.setBean(bean, request);
                 ServletUtility.setSuccessMessage("Data is successfully saved", request);
             } catch (DuplicateRecordException e) {
+                log.warn("Duplicate role detected");
                 ServletUtility.setBean(bean, request);
                 ServletUtility.setErrorMessage("Role already exists", request);
             } catch (ApplicationException e) {
+                log.error("ApplicationException during role save", e);
                 e.printStackTrace();
                 ServletUtility.handleException(e, request, response);
                 return;
             } catch (DatabaseException e) {
+                log.error("DatabaseException during role save", e);
                 e.printStackTrace();
                 ServletUtility.handleException(e, request, response);
                 return;
             }
+
         } else if (OP_UPDATE.equalsIgnoreCase(op)) {
 
             RoleBean bean = (RoleBean) populateBean(request);
 
             try {
                 if (id > 0) {
+                    log.info("Updating role with ID: " + id);
                     model.update(bean);
                 }
                 ServletUtility.setBean(bean, request);
                 ServletUtility.setSuccessMessage("Data is successfully updated", request);
             } catch (DuplicateRecordException e) {
+                log.warn("Duplicate role during update");
                 ServletUtility.setBean(bean, request);
                 ServletUtility.setErrorMessage("Role already exists", request);
             } catch (ApplicationException e) {
+                log.error("ApplicationException during role update", e);
                 e.printStackTrace();
                 ServletUtility.handleException(e, request, response);
                 return;
             }
+
         } else if (OP_CANCEL.equalsIgnoreCase(op)) {
+            log.info("Cancel operation - redirecting to Role List");
             ServletUtility.redirect(ORSView.ROLE_LIST_CTL, request, response);
             return;
+
         } else if (OP_RESET.equalsIgnoreCase(op)) {
+            log.info("Reset operation - redirecting to Role Form");
             ServletUtility.redirect(ORSView.ROLE_CTL, request, response);
             return;
         }
+
         ServletUtility.forward(getView(), request, response);
+        log.info("RoleCtl doPost() completed");
     }
 
     /**
@@ -193,6 +227,7 @@ public class RoleCtl extends BaseCtl {
      */
     @Override
     protected String getView() {
+        log.debug("Returning Role View");
         return ORSView.ROLE_VIEW;
     }
 }

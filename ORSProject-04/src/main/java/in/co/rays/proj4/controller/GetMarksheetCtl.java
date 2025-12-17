@@ -7,6 +7,8 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.log4j.Logger;
+
 import in.co.rays.proj4.bean.BaseBean;
 import in.co.rays.proj4.bean.MarksheetBean;
 import in.co.rays.proj4.exception.ApplicationException;
@@ -32,6 +34,8 @@ import in.co.rays.proj4.util.ServletUtility;
 @WebServlet(name = "GetMarksheetCtl", urlPatterns = { "/ctl/GetMarksheetCtl" })
 public class GetMarksheetCtl extends BaseCtl {
 
+    private static final Logger log = Logger.getLogger(GetMarksheetCtl.class);
+
     /**
      * Validates the request parameters for retrieving a marksheet.
      * <ul>
@@ -44,13 +48,17 @@ public class GetMarksheetCtl extends BaseCtl {
     @Override
     protected boolean validate(HttpServletRequest request) {
 
+        log.debug("GetMarksheetCtl validate() started");
+
         boolean pass = true;
 
         if (DataValidator.isNull(request.getParameter("rollNo"))) {
+            log.warn("Roll number is null");
             request.setAttribute("rollNo", PropertyReader.getValue("error.require", "Roll Number"));
             pass = false;
         }
 
+        log.debug("GetMarksheetCtl validate() completed with status: " + pass);
         return pass;
     }
 
@@ -62,6 +70,8 @@ public class GetMarksheetCtl extends BaseCtl {
      */
     @Override
     protected BaseBean populateBean(HttpServletRequest request) {
+
+        log.debug("GetMarksheetCtl populateBean() called");
 
         MarksheetBean bean = new MarksheetBean();
 
@@ -80,6 +90,8 @@ public class GetMarksheetCtl extends BaseCtl {
      */
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+
+        log.info("GetMarksheetCtl doGet() called");
         ServletUtility.forward(getView(), request, response);
     }
 
@@ -97,26 +109,33 @@ public class GetMarksheetCtl extends BaseCtl {
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
+        log.info("GetMarksheetCtl doPost() started");
+
         String op = DataUtility.getString(request.getParameter("operation"));
+        log.debug("Operation received: " + op);
 
         MarksheetModel model = new MarksheetModel();
-
         MarksheetBean bean = (MarksheetBean) populateBean(request);
 
         if (OP_GO.equalsIgnoreCase(op)) {
             try {
+                log.info("Searching marksheet for rollNo: " + bean.getRollNo());
                 bean = model.findByRollNo(bean.getRollNo());
                 if (bean != null) {
+                    log.info("Marksheet found for rollNo: " + bean.getRollNo());
                     ServletUtility.setBean(bean, request);
                 } else {
+                    log.warn("No marksheet found for rollNo: " + bean.getRollNo());
                     ServletUtility.setErrorMessage("RollNo Does Not exists", request);
                 }
             } catch (ApplicationException e) {
+                log.error("ApplicationException while fetching marksheet", e);
                 e.printStackTrace();
                 ServletUtility.handleException(e, request, response);
                 return;
             }
         }
+
         ServletUtility.forward(getView(), request, response);
     }
 

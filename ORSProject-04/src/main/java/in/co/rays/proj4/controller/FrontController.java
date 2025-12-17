@@ -16,6 +16,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
+import org.apache.log4j.Logger;
+
 /**
  * FrontController is a servlet filter that performs session checking before any
  * application controller is invoked. It prevents access to protected resources
@@ -32,6 +34,8 @@ import javax.servlet.http.HttpSession;
 @WebFilter(urlPatterns = { "/doc/*", "/ctl/*" })
 public class FrontController implements Filter {
 
+    private static final Logger log = Logger.getLogger(FrontController.class);
+
     /** 
      * Initializes the filter. No special initialization is required for this
      * implementation, but the method is provided for completeness and future use.
@@ -40,6 +44,7 @@ public class FrontController implements Filter {
      * @throws ServletException if an error occurs during initialization
      */
     public void init(FilterConfig conf) throws ServletException {
+        log.info("FrontController filter initialized");
         // No initialization required currently
     }
 
@@ -66,11 +71,15 @@ public class FrontController implements Filter {
         String uri = request.getRequestURI();
         request.setAttribute("uri", uri);
 
+        log.debug("Intercepted request URI: " + uri);
+
         if (session.getAttribute("user") == null) {
+            log.warn("Unauthorized access attempt detected. Session expired or user not logged in.");
             request.setAttribute("error", "Your session has been expired. Please Login again!");
             ServletUtility.forward(ORSView.LOGIN_VIEW, request, response);
             return;
         } else {
+            log.debug("User session valid. Proceeding with filter chain.");
             chain.doFilter(req, resp);
         }
     }
@@ -80,6 +89,7 @@ public class FrontController implements Filter {
      * this implementation, but the method is present for completeness.
      */
     public void destroy() {
+        log.info("FrontController filter destroyed");
         // No cleanup required currently
     }
 }

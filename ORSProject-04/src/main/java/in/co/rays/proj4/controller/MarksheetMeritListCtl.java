@@ -8,6 +8,8 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.log4j.Logger;
+
 import in.co.rays.proj4.bean.MarksheetBean;
 import in.co.rays.proj4.exception.ApplicationException;
 import in.co.rays.proj4.model.MarksheetModel;
@@ -31,6 +33,9 @@ import in.co.rays.proj4.util.ServletUtility;
 @WebServlet(name = "MarksheetMeritListCtl", urlPatterns = { "/ctl/MarksheetMeritListCtl" })
 public class MarksheetMeritListCtl extends BaseCtl {
 
+    /** Log4j Logger */
+    private static final Logger log = Logger.getLogger(MarksheetMeritListCtl.class);
+
     /**
      * Handles HTTP GET requests to fetch and display the merit list.
      * It sets list, pageNo and pageSize attributes and forwards to the view.
@@ -43,15 +48,21 @@ public class MarksheetMeritListCtl extends BaseCtl {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
+        log.debug("MarksheetMeritListCtl doGet() started");
+
         int pageNo = 1;
         int pageSize = DataUtility.getInt(PropertyReader.getValue("page.size"));
+
+        log.debug("Page No: " + pageNo + ", Page Size: " + pageSize);
 
         MarksheetModel model = new MarksheetModel();
 
         try {
+            log.info("Fetching merit list");
             List<MarksheetBean> list = model.getMeritList(pageNo, pageSize);
 
             if (list == null || list.isEmpty()) {
+                log.warn("No merit list records found");
                 ServletUtility.setErrorMessage("No record found", request);
             }
 
@@ -59,13 +70,17 @@ public class MarksheetMeritListCtl extends BaseCtl {
             ServletUtility.setPageNo(pageNo, request);
             ServletUtility.setPageSize(pageSize, request);
 
+            log.debug("Forwarding to view");
             ServletUtility.forward(getView(), request, response);
 
         } catch (ApplicationException e) {
+            log.error("Exception in MarksheetMeritListCtl doGet()", e);
             e.printStackTrace();
             ServletUtility.handleException(e, request, response);
             return;
         }
+
+        log.debug("MarksheetMeritListCtl doGet() ended");
     }
 
     /**
@@ -80,12 +95,18 @@ public class MarksheetMeritListCtl extends BaseCtl {
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
+        log.debug("MarksheetMeritListCtl doPost() started");
+
         String op = DataUtility.getString(request.getParameter("operation"));
+        log.debug("Operation received: " + op);
 
         if (OP_BACK.equalsIgnoreCase(op)) {
+            log.info("Back operation triggered");
             ServletUtility.redirect(ORSView.WELCOME_CTL, request, response);
             return;
         }
+
+        log.debug("MarksheetMeritListCtl doPost() ended");
     }
 
     /**
@@ -95,6 +116,7 @@ public class MarksheetMeritListCtl extends BaseCtl {
      */
     @Override
     protected String getView() {
+        log.debug("Returning Marksheet Merit List View");
         return ORSView.MARKSHEET_MERIT_LIST_VIEW;
     }
 }

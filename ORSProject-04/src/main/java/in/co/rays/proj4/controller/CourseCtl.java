@@ -7,6 +7,8 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.log4j.Logger;
+
 import in.co.rays.proj4.bean.BaseBean;
 import in.co.rays.proj4.bean.CourseBean;
 import in.co.rays.proj4.exception.ApplicationException;
@@ -34,6 +36,8 @@ import in.co.rays.proj4.util.ServletUtility;
 @WebServlet(name = "CourseCtl", urlPatterns = { "/ctl/CourseCtl" })
 public class CourseCtl extends BaseCtl {
 
+    private static final Logger log = Logger.getLogger(CourseCtl.class);
+
     /**
      * Validates the course form fields.
      * <ul>
@@ -48,26 +52,33 @@ public class CourseCtl extends BaseCtl {
     @Override
     protected boolean validate(HttpServletRequest request) {
 
+        log.debug("CourseCtl validate() started");
+
         boolean pass = true;
 
         if (DataValidator.isNull(request.getParameter("name"))) {
+            log.warn("Course name is null");
             request.setAttribute("name", PropertyReader.getValue("error.require", "Name"));
             pass = false;
         } else if (!DataValidator.isName(request.getParameter("name"))) {
+            log.warn("Invalid course name");
             request.setAttribute("name", "Invalid Name");
             pass = false;
         }
 
         if (DataValidator.isNull(request.getParameter("duration"))) {
+            log.warn("Course duration is null");
             request.setAttribute("duration", PropertyReader.getValue("error.require", "Duration"));
             pass = false;
         }
 
         if (DataValidator.isNull(request.getParameter("description"))) {
+            log.warn("Course description is null");
             request.setAttribute("description", PropertyReader.getValue("error.require", "Description"));
             pass = false;
         }
 
+        log.debug("CourseCtl validate() completed with status: " + pass);
         return pass;
     }
 
@@ -81,6 +92,8 @@ public class CourseCtl extends BaseCtl {
     @Override
     protected BaseBean populateBean(HttpServletRequest request) {
 
+        log.debug("CourseCtl populateBean() started");
+
         CourseBean bean = new CourseBean();
 
         bean.setId(DataUtility.getLong(request.getParameter("id")));
@@ -90,6 +103,7 @@ public class CourseCtl extends BaseCtl {
 
         populateDTO(bean, request);
 
+        log.debug("CourseCtl populateBean() completed");
         return bean;
     }
 
@@ -105,7 +119,10 @@ public class CourseCtl extends BaseCtl {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
+        log.info("CourseCtl doGet() started");
+
         long id = DataUtility.getLong(request.getParameter("id"));
+        log.debug("Requested course id: " + id);
 
         CourseModel model = new CourseModel();
 
@@ -113,12 +130,15 @@ public class CourseCtl extends BaseCtl {
             try {
                 CourseBean bean = model.findByPk(id);
                 ServletUtility.setBean(bean, request);
+                log.info("Course record loaded for id: " + id);
             } catch (ApplicationException e) {
+                log.error("ApplicationException while loading course", e);
                 e.printStackTrace();
                 ServletUtility.handleException(e, request, response);
                 return;
             }
         }
+
         ServletUtility.forward(getView(), request, response);
     }
 
@@ -139,22 +159,27 @@ public class CourseCtl extends BaseCtl {
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
+        log.info("CourseCtl doPost() started");
+
         String op = DataUtility.getString(request.getParameter("operation"));
+        log.debug("Operation received: " + op);
 
         CourseModel model = new CourseModel();
-
         long id = DataUtility.getLong(request.getParameter("id"));
 
         if (OP_SAVE.equalsIgnoreCase(op)) {
             CourseBean bean = (CourseBean) populateBean(request);
             try {
+                log.info("Adding new course");
                 long pk = model.add(bean);
                 ServletUtility.setBean(bean, request);
                 ServletUtility.setSuccessMessage("Course added successfully", request);
             } catch (DuplicateRecordException e) {
+                log.warn("Duplicate course record", e);
                 ServletUtility.setBean(bean, request);
                 ServletUtility.setErrorMessage("Course already exists", request);
             } catch (ApplicationException e) {
+                log.error("ApplicationException while saving course", e);
                 e.printStackTrace();
                 ServletUtility.handleException(e, request, response);
                 return;
@@ -163,25 +188,31 @@ public class CourseCtl extends BaseCtl {
             CourseBean bean = (CourseBean) populateBean(request);
             try {
                 if (id > 0) {
+                    log.info("Updating course id: " + id);
                     model.update(bean);
                 }
                 ServletUtility.setBean(bean, request);
                 ServletUtility.setSuccessMessage("Course updated successfully", request);
             } catch (DuplicateRecordException e) {
+                log.warn("Duplicate course on update", e);
                 ServletUtility.setBean(bean, request);
                 ServletUtility.setErrorMessage("Course already exists", request);
             } catch (ApplicationException e) {
+                log.error("ApplicationException while updating course", e);
                 e.printStackTrace();
                 ServletUtility.handleException(e, request, response);
                 return;
             }
         } else if (OP_CANCEL.equalsIgnoreCase(op)) {
+            log.info("Cancel operation: redirecting to course list");
             ServletUtility.redirect(ORSView.COURSE_LIST_CTL, request, response);
             return;
         } else if (OP_RESET.equalsIgnoreCase(op)) {
+            log.info("Reset operation: redirecting to course form");
             ServletUtility.redirect(ORSView.COURSE_CTL, request, response);
             return;
         }
+
         ServletUtility.forward(getView(), request, response);
     }
 

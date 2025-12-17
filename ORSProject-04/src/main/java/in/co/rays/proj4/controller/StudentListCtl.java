@@ -8,6 +8,8 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.log4j.Logger;
+
 import in.co.rays.proj4.bean.BaseBean;
 import in.co.rays.proj4.bean.StudentBean;
 import in.co.rays.proj4.exception.ApplicationException;
@@ -33,6 +35,9 @@ import in.co.rays.proj4.util.ServletUtility;
 @WebServlet(name = "StudentListCtl", urlPatterns = { "/ctl/StudentListCtl" })
 public class StudentListCtl extends BaseCtl {
 
+    /** Log4j Logger */
+    private static final Logger log = Logger.getLogger(StudentListCtl.class);
+
     /**
      * Populates a {@link StudentBean} from request parameters for use in search
      * or other operations.
@@ -42,6 +47,8 @@ public class StudentListCtl extends BaseCtl {
      */
     @Override
     protected BaseBean populateBean(HttpServletRequest request) {
+
+        log.debug("StudentListCtl populateBean() called");
 
         StudentBean bean = new StudentBean();
 
@@ -64,6 +71,8 @@ public class StudentListCtl extends BaseCtl {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
+        log.info("StudentListCtl doGet() started");
+
         int pageNo = 1;
         int pageSize = DataUtility.getInt(PropertyReader.getValue("page.size"));
 
@@ -71,11 +80,16 @@ public class StudentListCtl extends BaseCtl {
         StudentModel model = new StudentModel();
 
         try {
+            log.debug("Searching students for pageNo=" + pageNo + ", pageSize=" + pageSize);
+
             List<StudentBean> list = model.search(bean, pageNo, pageSize);
             List<StudentBean> next = model.search(bean, pageNo + 1, pageSize);
 
             if (list == null || list.isEmpty()) {
+                log.warn("No student records found");
                 ServletUtility.setErrorMessage("No record found", request);
+            } else {
+                log.info("Student records fetched: " + list.size());
             }
 
             ServletUtility.setList(list, request);
@@ -85,11 +99,15 @@ public class StudentListCtl extends BaseCtl {
             request.setAttribute("nextListSize", next.size());
 
             ServletUtility.forward(getView(), request, response);
+
         } catch (ApplicationException e) {
+            log.error("ApplicationException in StudentListCtl doGet()", e);
             e.printStackTrace();
             ServletUtility.handleException(e, request, response);
             return;
         }
+
+        log.info("StudentListCtl doGet() completed");
     }
 
     /**
@@ -106,6 +124,8 @@ public class StudentListCtl extends BaseCtl {
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
+        log.info("StudentListCtl doPost() started");
+
         List list = null;
         List next = null;
 
@@ -113,7 +133,9 @@ public class StudentListCtl extends BaseCtl {
         int pageSize = DataUtility.getInt(request.getParameter("pageSize"));
 
         pageNo = (pageNo == 0) ? 1 : pageNo;
-        pageSize = (pageSize == 0) ? DataUtility.getInt(PropertyReader.getValue("page.size")) : pageSize;
+        pageSize = (pageSize == 0)
+                ? DataUtility.getInt(PropertyReader.getValue("page.size"))
+                : pageSize;
 
         StudentBean bean = (StudentBean) populateBean(request);
         StudentModel model = new StudentModel();
@@ -121,40 +143,57 @@ public class StudentListCtl extends BaseCtl {
         String op = DataUtility.getString(request.getParameter("operation"));
         String[] ids = request.getParameterValues("ids");
 
+        log.debug("Operation received: " + op);
+
         try {
 
-            if (OP_SEARCH.equalsIgnoreCase(op) || "Next".equalsIgnoreCase(op) || "Previous".equalsIgnoreCase(op)) {
+            if (OP_SEARCH.equalsIgnoreCase(op) || "Next".equalsIgnoreCase(op)
+                    || "Previous".equalsIgnoreCase(op)) {
 
                 if (OP_SEARCH.equalsIgnoreCase(op)) {
+                    log.debug("Search operation");
                     pageNo = 1;
                 } else if (OP_NEXT.equalsIgnoreCase(op)) {
+                    log.debug("Next page operation");
                     pageNo++;
                 } else if (OP_PREVIOUS.equalsIgnoreCase(op) && pageNo > 1) {
+                    log.debug("Previous page operation");
                     pageNo--;
                 }
 
             } else if (OP_NEW.equalsIgnoreCase(op)) {
+
+                log.info("Redirecting to StudentCtl");
                 ServletUtility.redirect(ORSView.STUDENT_CTL, request, response);
                 return;
 
             } else if (OP_DELETE.equalsIgnoreCase(op)) {
+
+                log.info("Delete operation triggered");
                 pageNo = 1;
+
                 if (ids != null && ids.length > 0) {
                     StudentBean deletebean = new StudentBean();
                     for (String id : ids) {
                         deletebean.setId(DataUtility.getInt(id));
                         model.delete(deletebean);
+                        log.info("Student deleted with id: " + id);
                         ServletUtility.setSuccessMessage("Student is deleted successfully", request);
                     }
                 } else {
+                    log.warn("Delete attempted without selecting records");
                     ServletUtility.setErrorMessage("Select at least one record", request);
                 }
 
             } else if (OP_RESET.equalsIgnoreCase(op)) {
+
+                log.info("Reset operation triggered");
                 ServletUtility.redirect(ORSView.STUDENT_LIST_CTL, request, response);
                 return;
 
             } else if (OP_BACK.equalsIgnoreCase(op)) {
+
+                log.info("Back operation triggered");
                 ServletUtility.redirect(ORSView.STUDENT_LIST_CTL, request, response);
                 return;
             }
@@ -163,6 +202,7 @@ public class StudentListCtl extends BaseCtl {
             next = model.search(bean, pageNo + 1, pageSize);
 
             if (list == null || list.size() == 0) {
+                log.warn("No student records found after operation");
                 ServletUtility.setErrorMessage("No record found ", request);
             }
 
@@ -173,11 +213,15 @@ public class StudentListCtl extends BaseCtl {
             request.setAttribute("nextListSize", next.size());
 
             ServletUtility.forward(getView(), request, response);
+
         } catch (ApplicationException e) {
+            log.error("ApplicationException in StudentListCtl doPost()", e);
             e.printStackTrace();
             ServletUtility.handleException(e, request, response);
             return;
         }
+
+        log.info("StudentListCtl doPost() completed");
     }
 
     /**
@@ -187,6 +231,7 @@ public class StudentListCtl extends BaseCtl {
      */
     @Override
     protected String getView() {
+        log.debug("Returning Student List View");
         return ORSView.STUDENT_LIST_VIEW;
     }
 }
