@@ -1,3 +1,4 @@
+<%@page import="java.util.HashMap"%>
 <%@page import="in.co.rays.proj4.bean.RoleBean"%>
 <%@page import="in.co.rays.proj4.controller.ORSView"%>
 <%@page import="in.co.rays.proj4.util.HTMLUtility"%>
@@ -44,6 +45,7 @@
 				int nextListSize = DataUtility.getInt(request.getAttribute("nextListSize").toString());
 
 				List<RoleBean> roleList = (List<RoleBean>) request.getAttribute("roleList");
+				HashMap<String, String> map = (HashMap<String, String>) request.getAttribute("map");
 				List<UserBean> list = (List<UserBean>) ServletUtility.getList(request);
 				Iterator<UserBean> it = list.iterator();
 
@@ -63,11 +65,14 @@
 						placeholder="Enter Email ID"
 						value="<%=ServletUtility.getParameter("login", request)%>">&emsp;
 						
-						<label><b>DOB:</b></label> <input type="date"  name="dob"
+						<!--  <label><b>DOB:</b></label> <input type="date"  name="dob"
 						placeholder="Enter the DOB"
-						value="<%=ServletUtility.getParameter("dob", request)%>">&emsp;
+						value="<%=ServletUtility.getParameter("dob", request)%>">&emsp; -->
 
 						<label><b>Role : </b></label> <%=HTMLUtility.getList("roleId", String.valueOf(bean.getRoleId()), roleList)%>&emsp;
+						
+						
+						<!--  <label><b>Role : </b></label> <%=HTMLUtility.getList("gender", String.valueOf(bean.getGender()), map)%>&emsp;  -->
 
 						<input type="submit" name="operation"
 						value="<%=UserListCtl.OP_SEARCH%>"> &nbsp; <input

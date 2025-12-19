@@ -1,6 +1,7 @@
 package in.co.rays.proj4.controller;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 
 import javax.servlet.ServletException;
@@ -49,6 +50,11 @@ public class UserListCtl extends BaseCtl {
     @Override
     protected void preload(HttpServletRequest request) {
         log.debug("UserListCtl preload() called");
+        
+        HashMap<String, String> map = new HashMap<String, String>();
+        map.put("Female", "Female");
+        map.put("Male", "Male");
+        request.setAttribute("map", map);
 
         RoleModel roleModel = new RoleModel();
         try {
